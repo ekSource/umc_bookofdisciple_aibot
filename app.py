@@ -18,9 +18,13 @@ def load_faiss_and_metadata():
 index, metadata = load_faiss_and_metadata()
 
 # === Helper Functions ===
+from openai import OpenAI
+
+client = OpenAI(api_key=openai.api_key)
+
 def embed_query(query, model="text-embedding-3-large"):
-    response = openai.Embedding.create(input=query, model=model)
-    return np.array(response["data"][0]["embedding"]).astype("float32")
+    response = client.embeddings.create(input=[query], model=model)
+    return np.array(response.data[0].embedding).astype("float32")
 
 def format_reference(entry):
     fields = [
@@ -61,7 +65,7 @@ def summarize_each_chunk(passages):
 \"\"\"{text}\"\"\"
 
 ### Summary:"""
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
