@@ -5,7 +5,7 @@ import json
 import numpy as np
 
 # === OpenAI API Key from Streamlit Secrets ===
-openai.api_key = st.secrets["OPENAI_API_KEY"]
+openai_key = st.secrets["OPENAI_API_KEY"]
 
 # === Load FAISS index and metadata ===
 @st.cache_resource
@@ -65,13 +65,24 @@ def summarize_each_chunk(passages):
 \"\"\"{text}\"\"\"
 
 ### Summary:"""
+def summarize_each_chunk(passages):
+    summaries = []
+    for p in passages:
+        ref = format_reference(p)
+        text = p['text'].strip()
+        prompt = f"""Summarize the following section from the Book of Discipline of the United Methodist Church. Keep key legal/theological language.
+
+### Reference: {ref}
+\"\"\"{text}\"\"\"
+
+### Summary:"""
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
             max_tokens=4000
         )
-        summaries.append((ref, response["choices"][0]["message"]["content"]))
+        summaries.append((ref, response.choices[0].message.content))  # ✅ FIXED HERE
     return summaries
 
 # === RAG Query Pipeline ===
@@ -81,16 +92,16 @@ def rag_query(user_query, k=5):
     top_chunks = [metadata[i] for i in indices[0] if i < len(metadata)]
 
     prompt = build_prompt(user_query, top_chunks)
-    response = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You answer using the United Methodist Church Book of Discipline."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.4,
-        max_tokens=2000
-    )
-    answer = response["choices"][0]["message"]["content"]
+    response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[
+        {"role": "system", "content": "You answer using the United Methodist Church Book of Discipline."},
+        {"role": "user", "content": prompt}
+            ],
+    temperature=0.4,
+    max_tokens=4000
+     )
+    answer = response.choices[0].message.content
     summaries = summarize_each_chunk(top_chunks)
     return answer, summaries, top_chunks
 
