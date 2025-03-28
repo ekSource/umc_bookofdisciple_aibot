@@ -107,7 +107,7 @@ def rag_query(user_query, k=5):
 
 # === Streamlit UI ===
 st.set_page_config(page_title="United Methodist Church AI Bot", layout="wide")
-st.image("UMC_LOGO.png", width=80)
+st.image("UMC_LOGO.png", width=200)
 st.title("📘 United Methodist Church - Book of Discipline Assistant")
 st.markdown("Ask a question and get grounded answers with references from the official Book of Discipline.")
 
