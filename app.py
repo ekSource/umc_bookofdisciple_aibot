@@ -108,7 +108,6 @@ def rag_query(user_query, k=10):
     summaries = summarize_each_chunk(top_chunks)
     return answer, summaries, top_chunks
 
-# === Streamlit UI ===
 # === Dark Mode Toggle ===
 dark_mode = st.toggle("🌙 Dark Mode", value=False)
 
@@ -124,10 +123,14 @@ if dark_mode:
         </style>
     """, unsafe_allow_html=True)
 
-# === Logo and Title ===
+# === Bubble Colors ===
+bubble_bg = "#1c1f26" if dark_mode else "#f0f0f0"
+bubble_text = "#ffffff" if dark_mode else "#000000"
+
+# === Header and Logo ===
 st.image("UMC_LOGO.png", width=400)
 st.title("📘 United Methodist Church - Book of Discipline Assistant")
-st.markdown("Ask a question and get grounded answers with references from the official Book of Discipline.")
+st.markdown("Ask your questions and receive accurate answers with references from the Book of Discipline.")
 
 # === Session State ===
 if "chat_history" not in st.session_state:
@@ -135,16 +138,13 @@ if "chat_history" not in st.session_state:
 if "last_chunks" not in st.session_state:
     st.session_state.last_chunks = []
 
-# === Start New Chat ===
+# === Start New Chat Button ===
 if st.button("🧹 Start New Chat"):
     st.session_state.clear()
     st.rerun()
 
-# === Response Bubble Colors Based on Theme ===
-bubble_bg = "#1c1f26" if dark_mode else "#f0f0f0"
-bubble_text = "#ffffff" if dark_mode else "#000000"
-
 # === Display Chat History ===
+st.markdown("## 🗂️ Chat History")
 for chat in st.session_state.chat_history:
     st.markdown(f"**🧑 You:** {chat['question']}")
     st.markdown(f"""
@@ -152,27 +152,10 @@ for chat in st.session_state.chat_history:
             {chat['answer']}
         </div>
     """, unsafe_allow_html=True)
-    
-# === Chat Input ===
-st.markdown("## 💬 Ask your question:")
-query = st.text_input("Type here and hit 'Send':", "")
-
-if st.button("Send") and query.strip():
-    with st.spinner("Generating answer..."):
-        start_time = time.time()
-        answer, summaries, refs = rag_query(query, k=5)
-        end_time = time.time()
-        response_time = round(end_time - start_time, 2)
-
-        # Append response to history
-        full_answer = f"{answer}\n\n✅ _Responded in {response_time} seconds_"
-        st.session_state.chat_history.append({"question": query, "answer": full_answer})
-        st.session_state.last_chunks = refs
-        st.rerun()
 
 # === Show Summarized References First ===
 if st.session_state.last_chunks:
-    st.markdown("## Summarized References")
+    st.markdown("## 🔍 Summarized References")
     for i, (ref, summary) in enumerate(summarize_each_chunk(st.session_state.last_chunks), 1):
         with st.expander(f"{i}. {ref}", expanded=False):
             st.markdown(summary)
@@ -188,3 +171,24 @@ if st.session_state.last_chunks:
                     st.markdown(f"- **{key.replace('_', ' ').title()}:** {ref[key]}")
             st.markdown(f"**Text:** {ref['text']}")
             st.markdown("---")
+
+# === Input Prompt at Bottom ===
+st.markdown("---")
+st.markdown("## 💬 Ask Another Question")
+query = st.text_input("Type here and hit 'Send':", key="query_input")
+
+# Optional: Top-K Slider (feel free to remove)
+top_k = st.slider("🔎 Number of chunks to reference (Top K)", min_value=3, max_value=10, value=5)
+
+if st.button("Send") and query.strip():
+    with st.spinner("Generating answer..."):
+        start_time = time.time()
+        answer, summaries, refs = rag_query(query, k=top_k)
+        end_time = time.time()
+        response_time = round(end_time - start_time, 2)
+
+        # Store and rerun
+        full_answer = f"{answer}\n\n✅ _Responded in {response_time} seconds_"
+        st.session_state.chat_history.append({"question": query, "answer": full_answer})
+        st.session_state.last_chunks = refs
+        st.rerun()
