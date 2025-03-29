@@ -5,6 +5,7 @@ import json
 import numpy as np
 import time
 
+# === Set Page Config (must be the very first Streamlit call) ===
 st.set_page_config(page_title="United Methodist Church AI Bot", layout="wide")
 
 # === OpenAI API Key from Streamlit Secrets ===
@@ -22,7 +23,6 @@ index, metadata = load_faiss_and_metadata()
 
 # === Helper Functions ===
 from openai import OpenAI
-
 client = OpenAI(api_key=openai.api_key)
 
 def embed_query(query, model="text-embedding-3-large"):
@@ -42,9 +42,11 @@ def format_reference(entry):
     return " — ".join([f"{label}: {value}" for label, value in fields if value])
 
 def build_prompt(user_query, passages):
-    prompt = f"""You are an assistant answering questions using the Book of Discipline of the United Methodist Church.
-
-Use exact wording when needed and include references by paragraph, title, or section.
+    # Updated prompt template with explicit instructions for detailed explanations
+    prompt = f"""You are an expert assistant on the Book of Discipline of the United Methodist Church.
+Provide a detailed, step-by-step explanation of your answer. 
+Quote the relevant paragraph numbers, section titles, or articles when applicable.
+Do not simply summarize—elaborate on key concepts mentioned in the question.
 
 ### Question:
 {user_query}
@@ -54,7 +56,7 @@ Use exact wording when needed and include references by paragraph, title, or sec
         ref = format_reference(p)
         text = p["text"].strip().replace("\n", " ")
         prompt += f"\n\n→ {ref}:\n\"{text}\""
-    prompt += "\n\n### Your Answer:"
+    prompt += "\n\n### Your Detailed Answer:"
     return prompt
 
 def summarize_each_chunk(passages):
@@ -62,18 +64,8 @@ def summarize_each_chunk(passages):
     for p in passages:
         ref = format_reference(p)
         text = p['text'].strip()
-        prompt = f"""Get details from the following section from the Book of Discipline of the United Methodist Church. Keep key legal/theological language.
-
-### Reference: {ref}
-\"\"\"{text}\"\"\"
-
-### Summary:"""
-def summarize_each_chunk(passages):
-    summaries = []
-    for p in passages:
-        ref = format_reference(p)
-        text = p['text'].strip()
-        prompt = f"""Expand the following section from the Book of Discipline of the United Methodist Church. Keep key legal/theological language.
+        prompt = f"""Summarize the following section from the Book of Discipline of the United Methodist Church.
+Provide a detailed summary with key legal and theological language, and include any paragraph numbers or titles if mentioned.
 
 ### Reference: {ref}
 \"\"\"{text}\"\"\"
@@ -85,30 +77,31 @@ def summarize_each_chunk(passages):
             temperature=0.7,
             max_tokens=4000
         )
-        summaries.append((ref, response.choices[0].message.content))  # ✅ FIXED HERE
+        summaries.append((ref, response.choices[0].message.content))
     return summaries
 
-# === RAG Query Pipeline ===
-def rag_query(user_query, k=10):
+def rag_query(user_query, k=8):  # default increased to 8
     query_vector = embed_query(user_query).reshape(1, -1)
     distances, indices = index.search(query_vector, k)
     top_chunks = [metadata[i] for i in indices[0] if i < len(metadata)]
-
+    
     prompt = build_prompt(user_query, top_chunks)
     response = client.chat.completions.create(
-    model="gpt-4o-mini",
-    messages=[
-        {"role": "system", "content": "You answer using the United Methodist Church Book of Discipline."},
-        {"role": "user", "content": prompt}
-            ],
-    temperature=0.7,
-    max_tokens=4000
-     )
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You answer using the United Methodist Church Book of Discipline."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.4,
+        max_tokens=4000
+    )
     answer = response.choices[0].message.content
     summaries = summarize_each_chunk(top_chunks)
     return answer, summaries, top_chunks
 
-# === Dark Mode Toggle ===
+# === Streamlit UI ===
+
+# --- Dark Mode Toggle ---
 dark_mode = st.toggle("🌙 Dark Mode", value=False)
 
 if dark_mode:
@@ -123,44 +116,44 @@ if dark_mode:
         </style>
     """, unsafe_allow_html=True)
 
-# === Bubble Colors ===
+# --- Bubble Colors ---
 bubble_bg = "#1c1f26" if dark_mode else "#f0f0f0"
 bubble_text = "#ffffff" if dark_mode else "#000000"
 
-# === Header and Logo ===
+# --- Header and Logo ---
 st.image("UMC_LOGO.png", width=400)
 st.title("📘 United Methodist Church - Book of Discipline Assistant")
-st.markdown("Ask your questions and receive accurate answers with references from the Book of Discipline.")
+st.markdown("Ask your questions and receive detailed, well-explained answers with references from the official Book of Discipline.")
 
-# === Session State ===
+# --- Session State ---
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "last_chunks" not in st.session_state:
     st.session_state.last_chunks = []
 
-# === Start New Chat Button ===
+# --- Start New Chat Button ---
 if st.button("🧹 Start New Chat"):
     st.session_state.clear()
     st.rerun()
 
-# === Display Chat History ===
+# --- Display Chat History ---
 st.markdown("## 🗂️ Chat History")
 for chat in st.session_state.chat_history:
     st.markdown(f"**🧑 You:** {chat['question']}")
     st.markdown(f"""
-        <div style='background-color: {bubble_bg}; color: {bubble_text}; padding: 12px; border-radius: 10px; margin-top: 6px; margin-bottom: 20px;'>
-            {chat['answer']}
-        </div>
+    <div style='background-color: {bubble_bg}; color: {bubble_text}; padding: 12px; border-radius: 10px; margin-top: 6px; margin-bottom: 20px;'>
+        {chat['answer']}
+    </div>
     """, unsafe_allow_html=True)
 
-# === Show Summarized References First ===
+# --- Show Summarized References ---
 if st.session_state.last_chunks:
     st.markdown("## 🔍 Summarized References")
     for i, (ref, summary) in enumerate(summarize_each_chunk(st.session_state.last_chunks), 1):
         with st.expander(f"{i}. {ref}", expanded=False):
             st.markdown(summary)
 
-# === Show Raw Referenced Chunks Second ===
+# --- Show Raw Referenced Chunks ---
 if st.session_state.last_chunks:
     st.markdown("## 📚 Referenced Chunks")
     with st.expander("📄 Show All Referenced Chunks", expanded=False):
@@ -172,13 +165,13 @@ if st.session_state.last_chunks:
             st.markdown(f"**Text:** {ref['text']}")
             st.markdown("---")
 
-# === Input Prompt at Bottom ===
+# --- Input Prompt at Bottom ---
 st.markdown("---")
 st.markdown("## 💬 Ask Another Question")
 query = st.text_input("Type here and hit 'Send':", key="query_input")
 
-# Optional: Top-K Slider (feel free to remove)
-top_k = st.slider("🔎 Number of chunks to reference (Top K)", min_value=3, max_value=10, value=5)
+# --- Top-K Slider (optional) ---
+top_k = st.slider("🔎 Number of chunks to reference (Top K)", min_value=3, max_value=15, value=8)
 
 if st.button("Send") and query.strip():
     with st.spinner("Generating answer..."):
@@ -186,8 +179,8 @@ if st.button("Send") and query.strip():
         answer, summaries, refs = rag_query(query, k=top_k)
         end_time = time.time()
         response_time = round(end_time - start_time, 2)
-
-        # Store and rerun
+        
+        # Append response to history
         full_answer = f"{answer}\n\n✅ _Responded in {response_time} seconds_"
         st.session_state.chat_history.append({"question": query, "answer": full_answer})
         st.session_state.last_chunks = refs
