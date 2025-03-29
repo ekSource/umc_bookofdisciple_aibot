@@ -116,8 +116,10 @@ if dark_mode:
     st.markdown("""
         <style>
         body { background-color: #0e1117; color: #f0f0f0; }
-        .stTextInput>div>div>input, .stButton>button {
-            background-color: #1c1f26; color: white;
+        .stTextInput>div>div>input,
+        .stButton>button {
+            background-color: #1c1f26;
+            color: #f0f0f0;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -141,11 +143,14 @@ if st.button("🧹 Start New Chat"):
 # === Display Chat History ===
 for chat in st.session_state.chat_history:
     st.markdown(f"**🧑 You:** {chat['question']}")
-    st.markdown(f"""
-    <div style='background-color: #f0f0f0; padding: 12px; border-radius: 10px; margin-top: 6px; margin-bottom: 20px;'>
+    bubble_bg = "#1c1f26" if dark_mode else "#f0f0f0"
+bubble_text = "#ffffff" if dark_mode else "#000000"
+
+st.markdown(f"""
+    <div style='background-color: {bubble_bg}; color: {bubble_text}; padding: 12px; border-radius: 10px; margin-top: 6px; margin-bottom: 20px;'>
         {chat['answer']}
     </div>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # === Chat Input ===
 st.markdown("## 💬 Ask your question:")
