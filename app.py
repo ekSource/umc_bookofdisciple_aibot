@@ -140,6 +140,10 @@ if st.button("🧹 Start New Chat"):
     st.session_state.clear()
     st.rerun()
 
+# === Response Bubble Colors Based on Theme ===
+bubble_bg = "#1c1f26" if dark_mode else "#f0f0f0"
+bubble_text = "#ffffff" if dark_mode else "#000000"
+
 # === Display Chat History ===
 for chat in st.session_state.chat_history:
     st.markdown(f"**🧑 You:** {chat['question']}")
