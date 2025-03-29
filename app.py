@@ -147,15 +147,12 @@ bubble_text = "#ffffff" if dark_mode else "#000000"
 # === Display Chat History ===
 for chat in st.session_state.chat_history:
     st.markdown(f"**🧑 You:** {chat['question']}")
-    bubble_bg = "#1c1f26" if dark_mode else "#f0f0f0"
-bubble_text = "#ffffff" if dark_mode else "#000000"
-
-st.markdown(f"""
-    <div style='background-color: {bubble_bg}; color: {bubble_text}; padding: 12px; border-radius: 10px; margin-top: 6px; margin-bottom: 20px;'>
-        {chat['answer']}
-    </div>
-""", unsafe_allow_html=True)
-
+    st.markdown(f"""
+        <div style='background-color: {bubble_bg}; color: {bubble_text}; padding: 12px; border-radius: 10px; margin-top: 6px; margin-bottom: 20px;'>
+            {chat['answer']}
+        </div>
+    """, unsafe_allow_html=True)
+    
 # === Chat Input ===
 st.markdown("## 💬 Ask your question:")
 query = st.text_input("Type here and hit 'Send':", "")
