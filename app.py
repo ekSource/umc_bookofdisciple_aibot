@@ -65,7 +65,6 @@ def summarize_each_chunk(passages):
         ref = format_reference(p)
         text = p['text'].strip()
         prompt = f"""Summarize the following section from the Book of Discipline of the United Methodist Church.
-Provide a detailed summary with key legal and theological language, and include any paragraph numbers or titles if mentioned.
 
 ### Reference: {ref}
 \"\"\"{text}\"\"\"
