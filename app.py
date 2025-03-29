@@ -62,7 +62,7 @@ def summarize_each_chunk(passages):
     for p in passages:
         ref = format_reference(p)
         text = p['text'].strip()
-        prompt = f"""Summarize the following section from the Book of Discipline of the United Methodist Church. Keep key legal/theological language.
+        prompt = f"""Get details from the following section from the Book of Discipline of the United Methodist Church. Keep key legal/theological language.
 
 ### Reference: {ref}
 \"\"\"{text}\"\"\"
@@ -73,7 +73,7 @@ def summarize_each_chunk(passages):
     for p in passages:
         ref = format_reference(p)
         text = p['text'].strip()
-        prompt = f"""Summarize the following section from the Book of Discipline of the United Methodist Church. Keep key legal/theological language.
+        prompt = f"""Expand the following section from the Book of Discipline of the United Methodist Church. Keep key legal/theological language.
 
 ### Reference: {ref}
 \"\"\"{text}\"\"\"
@@ -101,7 +101,7 @@ def rag_query(user_query, k=10):
         {"role": "system", "content": "You answer using the United Methodist Church Book of Discipline."},
         {"role": "user", "content": prompt}
             ],
-    temperature=0.4,
+    temperature=0.7,
     max_tokens=4000
      )
     answer = response.choices[0].message.content
