@@ -89,7 +89,7 @@ def summarize_each_chunk(passages):
     return summaries
 
 # === RAG Query Pipeline ===
-def rag_query(user_query, k=5):
+def rag_query(user_query, k=10):
     query_vector = embed_query(user_query).reshape(1, -1)
     distances, indices = index.search(query_vector, k)
     top_chunks = [metadata[i] for i in indices[0] if i < len(metadata)]
