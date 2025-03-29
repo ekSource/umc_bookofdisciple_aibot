@@ -5,6 +5,7 @@ import json
 import numpy as np
 import time
 
+st.set_page_config(page_title="United Methodist Church AI Bot", layout="wide")
 
 # === OpenAI API Key from Streamlit Secrets ===
 openai_key = st.secrets["OPENAI_API_KEY"]
@@ -106,8 +107,6 @@ def rag_query(user_query, k=5):
     answer = response.choices[0].message.content
     summaries = summarize_each_chunk(top_chunks)
     return answer, summaries, top_chunks
-
-st.set_page_config(page_title="United Methodist Church AI Bot", layout="wide")
 
 # === Streamlit UI ===
 # === Dark Mode Toggle ===
